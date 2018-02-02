@@ -1,4 +1,3 @@
-
 module.exports = async function(context) {
     var Coval = require('coval.js').Coval
     var coval = new Coval()
