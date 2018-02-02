@@ -7,7 +7,16 @@ module.exports = async function(context) {
     var Unloq = coval.Partner.Unloq
 
     var agent = new Agent(UserLib.Server)
-    var key = agent.Generate()
+    var qs = context.request.query
+    var key, key_action
+    if (qs.key) {
+        key = qs.key
+        agent.SetKey(key)
+        key_action = 'Loaded Key'
+    } else {
+        key = agent.Generate()
+        key_action = 'Generated Key'
+    }
     var shares = agent.Split(2, 2, 256)
     var combined = agent.Combine(shares.value)
     return {
@@ -17,7 +26,8 @@ module.exports = async function(context) {
             my_share: shares.GetValue()[0], 
             id_share: shares.GetValue()[1],
             agent: agent, 
-            /* req: context.request.query  */
+            key_action: key_action,
+            key: JSON.stringify(agent.SetKey(key)),
         },null,4),
         headers: {
             'Content-Type': 'application/json'
