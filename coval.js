@@ -12,7 +12,7 @@ module.exports = async function(context) {
     var combined = agent.Combine(shares.value)
     return {
         status: 200,
-        body: JSON.stringify(shares.GetValue()[0], null, 4)
+        body: {share: shares.GetValue()[0]}
     };
     process.exit(0)
 }
