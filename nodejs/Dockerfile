@@ -13,7 +13,7 @@ RUN apk add git
 COPY package.json /usr/src/app/
 RUN npm install && npm cache clean --force
 COPY server.js /usr/src/app/server.js
-
+COPY test.env /usr/src/app/test.env
 CMD [ "npm", "start" ]
 
 EXPOSE 8888
