@@ -20,10 +20,23 @@ module.exports = function(context, callback) {
     function makeConnectedMultichainObject() {
         return new Multichain(process.env.MULTICHAINADDRESS, makeConnectionFromEnv())
     }
-    multichain.Info(function(err, info) {
-        console.log(info)
-        callback(200, {msg: 'using env vars', payload: info, err: err})
-    })
     
 
+    if (!qs.address /* || ip_parts[0] != 10 */) {
+        callback(409,{})
+    } else {
+        //var rnd = Math.floor(Math.random() * (1000000 - 1) + 1)
+        //var payload = {}
+        multichain.ImportAddress(qs.address, "emblem-", function(err, result){
+            //payload.import = result
+            //multichain.GrantPermissionToAddress(qs.address, "send,receive", function(err, result){
+            //    payload.grant = result
+                callback(200, {script: 'import address', err: err, result: result} )
+            //})
+        })        
+    }
+
+    /* multichain.Info(function(err, info){
+        callback(200, {i: networkInterfaces} )
+    }) */
 }

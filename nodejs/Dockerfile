@@ -9,11 +9,9 @@ ENV NODE_ENV $NODE_ENV
 RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
 RUN apk update
-RUN apk add git
+RUN apk add git libtool autoconf automake alpine-sdk python
 COPY package.json /usr/src/app/
 RUN npm install && npm cache clean --force
 COPY server.js /usr/src/app/server.js
-COPY test.env /usr/src/app/test.env
 CMD [ "npm", "start" ]
-
 EXPOSE 8888
