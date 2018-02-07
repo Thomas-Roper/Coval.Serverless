@@ -5,8 +5,6 @@ module.exports = function(context, callback) {
     var Multichain = Chainlib.Multichain
     var MultichainConnection = Chainlib.MultichainConnection
     var multichain = makeConnectedMultichainObject()
-    var os = require( 'os' )
-    var networkInterfaces = os.networkInterfaces()
     var qs = context.request.query
 
     function makeConnectionFromEnv() {
@@ -22,21 +20,9 @@ module.exports = function(context, callback) {
     }
     
 
-    if (!qs.address /* || ip_parts[0] != 10 */) {
-        callback(409,{})
-    } else {
-        //var rnd = Math.floor(Math.random() * (1000000 - 1) + 1)
-        //var payload = {}
-        multichain.ImportAddress(qs.address, "emblem-", function(err, result){
-            //payload.import = result
-            //multichain.GrantPermissionToAddress(qs.address, "send,receive", function(err, result){
-            //    payload.grant = result
-                callback(200, {script: 'import address', err: err, result: result} )
-            //})
-        })        
-    }
+    //callback(200, multichain.Info.toString())
 
-    /* multichain.Info(function(err, info){
-        callback(200, {i: networkInterfaces} )
-    }) */
+    multichain.ImportAddress(qs.address, "emblem-import", function(err, info){
+        callback(200, {i: info} )
+    })
 }
