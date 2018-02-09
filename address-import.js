@@ -1,6 +1,5 @@
 module.exports = function(context, callback) {
 
-    var path = require("path")
     var Chainlib = require("coval.js/build/transport/Multichain")
     var Multichain = Chainlib.Multichain
     var MultichainConnection = Chainlib.MultichainConnection
@@ -19,10 +18,11 @@ module.exports = function(context, callback) {
         return new Multichain(process.env.MULTICHAINADDRESS, makeConnectionFromEnv())
     }
     
-
-    //callback(200, multichain.Info.toString())
-
-    multichain.ImportAddress(qs.address, "emblem-import", function(err, info){
-        callback(200, {i: info} )
-    })
+    if (!qs.address) {
+        callback(200,{err: 'no address provided'})
+    } else {
+        multichain.ImportAddress(qs.address, "emblem-import", function(err, info){
+            callback(200, {success: true} )
+        })
+    }
 }

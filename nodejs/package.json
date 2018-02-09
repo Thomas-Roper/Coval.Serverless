@@ -15,7 +15,7 @@
   "dependencies": {
     "body-parser": "*",
     "co": "~4.6.0",
-    "coval.js": "https://github.com/DecentricCorp/Coval.js.git#serverless",
+    "coval.js": "https://github.com/DecentricCorp/Coval.js.git",
     "express": "*",
     "minimist": "*",
     "morgan": "*",

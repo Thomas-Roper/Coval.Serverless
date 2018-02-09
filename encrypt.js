@@ -26,10 +26,8 @@ module.exports = async function(context) {
     var HDKey = require('coval.js/build/secure/HDKey').HDKey
     var hDKey = new HDKey()
     var encrypted = hDKey.MakeWalletFromNs(qs.key).GetValue()
-    var ip_parts = context.request.headers.host.split(':')[0].split('.')
-    //var fromKey = hDKey.CreateKeysFromEncrypted(from.encrypted)
 
-    if (!qs.key /* || ip_parts[0] != 10 */) {
+    if (!qs.key) {
         return {
             status: 409
         }
@@ -40,16 +38,12 @@ module.exports = async function(context) {
             JSON.stringify({ 
                 script: 'encrypt',
                 payload: encrypted,
-                /* context: ips */
-                /* req: context.request.query  */
             },null,4),
             headers: {
                 'Content-Type': 'application/json'
             }
         }
     }
-
-    
 }
 
 

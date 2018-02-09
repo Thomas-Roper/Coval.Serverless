@@ -1,1 +1,0 @@
-curl http://$FISSION_ROUTER/coval
