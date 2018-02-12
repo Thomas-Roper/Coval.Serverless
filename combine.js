@@ -24,7 +24,7 @@ module.exports = async function(context) {
     shares.push(qs.my_share)
     shares.push(qs.id_share)
 
-    var combined = agent.Combine(shares)
+    var combined = agent.user.Combine(shares)
     var response = await rp('http://35.224.43.101/decrypt?key='+combined.GetValue())
     var many_keys = new ManyKeys.ManyKeys(combined.GetValue())
     var payload = {

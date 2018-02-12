@@ -15,14 +15,14 @@ module.exports = async function(context) {
 
     if (qs.key) {
         key = qs.key
-        agent.SetKey(key)
+        agent.user.SetKey(key)
         key_action = 'Loaded Entropy'
     } else {
-        key = agent.Generate()
+        key = agent.user.Generate()
         key_action = 'Generated Entropy'
     }
     
-    var shares = agent.Split(2, 2, 256)
+    var shares = agent.user.Split(2, 2, 256)
     var response = await rp('http://35.224.43.101/encrypt?key='+key.GetValue())
     var many_keys = new ManyKeys.ManyKeys(key.GetValue())
     var payload = {}

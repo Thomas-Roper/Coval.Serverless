@@ -1,28 +1,25 @@
 module.exports = function(context, callback) {
+    var Coval = require('coval.js').Coval
+    var coval = new Coval()
+    var Agent = coval.Agent
+    var UserLib = coval.User
+    var agent = new Agent(UserLib.Server)
+    var multichain = agent.user.multichain.multichain
 
-    var Chainlib = require("coval.js/build/transport/Multichain")
-    var Multichain = Chainlib.Multichain
-    var MultichainConnection = Chainlib.MultichainConnection
-    var multichain = makeConnectedMultichainObject()
     var qs = context.request.query
-
-    function makeConnectionFromEnv() {
-        return new MultichainConnection(
-            Number(process.env.MULTICHAINport), 
-            process.env.MULTICHAINhost, 
-            process.env.MULTICHAINuser, 
-            process.env.MULTICHAINpass
-        )
-    }
-    function makeConnectedMultichainObject() {
-        return new Multichain(process.env.MULTICHAINADDRESS, makeConnectionFromEnv())
-    }
     
     if (!qs.address) {
         callback(200,{err: 'no address provided'})
     } else {
         multichain.ImportAddress(qs.address, "emblem-import", function(err, info){
-            callback(200, {success: true} )
+            var payload = {import: err || info}
+            multichain.GrantPermissionToAddress(qs.address, "send,receive", function(err, result){
+                payload.grant = err || result
+                multichain.Issue(qs.address, "Emblem - test", 1, function(err, info){
+                    payload.emblem = err || info
+                    callback(200, payload)
+                })                
+            })
         })
     }
 }
