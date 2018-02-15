@@ -39,7 +39,8 @@ module.exports = async function(context) {
             key_action: key_action,
         },null,4),
         headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
         }
     }
 }

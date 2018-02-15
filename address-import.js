@@ -11,13 +11,20 @@ module.exports = function(context, callback) {
     if (!qs.address) {
         callback(200,{err: 'no address provided'})
     } else {
+        var rnd = Math.floor(Math.random() * (1000000 - 1) + 1)
+        var name = "Emblem - "
+        if (!qs.name) {
+            name += rnd.toString()
+        } else {
+            name += qs.name
+        }
         multichain.ImportAddress(qs.address, "emblem-import", function(err, info){
-            var payload = {import: err || info}
+            var payload = {import: err || info, name: name}
             multichain.GrantPermissionToAddress(qs.address, "send,receive", function(err, result){
                 payload.grant = err || result
-                multichain.Issue(qs.address, "Emblem - test", 1, function(err, info){
+                multichain.Issue(qs.address, name, 1, function(err, info){
                     payload.emblem = err || info
-                    callback(200, payload)
+                    callback(200, payload, {'Access-Control-Allow-Origin': '*'})
                 })                
             })
         })

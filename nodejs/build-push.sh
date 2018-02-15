@@ -1,4 +1,4 @@
-docker build . --tag us.gcr.io/marine-compass-175800/coval:v2 $1
-gcloud docker -- push us.gcr.io/marine-compass-175800/coval:v2
+docker build . --tag us.gcr.io/marine-compass-175800/coval:v3 $1
+gcloud docker -- push us.gcr.io/marine-compass-175800/coval:v3
 fission env delete --name covaljs
-fission env create --name covaljs --image us.gcr.io/marine-compass-175800/coval:v2
+fission env create --name covaljs --image us.gcr.io/marine-compass-175800/coval:v3
