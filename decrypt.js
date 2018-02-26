@@ -1,3 +1,4 @@
+//* TODO: make secure. This function takes key that's been passed by combine function and returns a decrypted private key object
 module.exports = async function(context) {
     var qs = context.request.query
     var HDKey = require('coval.js/build/secure/HDKey').HDKey
