@@ -12,38 +12,25 @@ module.exports = function(context, callback) {
     var qs = context.request.query
     var agent = new Agent(UserLib.Server)
     //var qs = context.request.query
-    const stringBody = JSON.stringify(context.request.body);
-    const body = JSON.parse(stringBody);
+    //const stringBody = JSON.stringify(context.request.body);
+    //const body = JSON.parse(stringBody);
     //const location = body.location;
     var CryptoJS = require("crypto-js")
 
     var Unloq = new UnloqLib(process.env.UNLOQ_KEY)
     var payload = {}
-    if (!body.to_encrypt && !qs.to_encrypt) { 
-        payload.error = "Missing value to encrypt"
+    if (!qs.unloq_id) { 
+        payload.error = "Missing Unloq ID"
         return returnPayload()
     }
-    if (!body.key && !qs.key) { 
-        payload.error = "Missing key"
+    Unloq.GetEncryptionKey(qs.unloq_id, function(key){        
+        payload.key = key
         return returnPayload()
-    }
-
-    payload.encrypted = encrypt(new Buffer(body.to_encrypt || qs.to_encrypt).toString("hex"), body.key || qs.key)
-    return returnPayload()
-
+    })
     function returnPayload() {
         return callback(200, payload, {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*'
         })
-    }
-
-    function encrypt(to_encrypt, key) {
-        var encrypted = CryptoJS.AES.encrypt(to_encrypt, key).toString()
-        if (encrypted.includes("+")) {
-            return encrypt(to_encrypt, key)
-        } else {
-            return encrypted
-        }
     }
 }
