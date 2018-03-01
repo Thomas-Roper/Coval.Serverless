@@ -8,7 +8,7 @@ module.exports = async function(context) {
     var UserType = UserLib.UserType
     var Agent = coval.Agent
     var Unloq = coval.Partner.Unloq
-    var payload = {}
+    var payload = {emblem_type: "public"}
     var whitelist = [
         "bitcoin",
         "bitcoincash",
@@ -74,30 +74,82 @@ module.exports = async function(context) {
     
     payload.addresses = {}
     if (qs.unloq_id) {
-        await whitelist.forEach(async function(item, index, arr) {
+        payload.emblem_type="private"
+        var key = JSON.parse(JSON.parse(unloq_key).key)
+        await encryptPiece(0, whitelist.length)
+        async function encryptPiece(index, total) {
+            var item = whitelist[index]
             if (allAddresses[item]) {
-                var key = JSON.parse(JSON.parse(unloq_key).key)            
-                var encrypted_address  = await rp('https://www.synrgtech.net/user-encrypt?key='+key.result.encryption_key+'&to_encrypt='+allAddresses[item].address)//encrypted_address
-                payload.addresses[item] = {address:JSON.parse(encrypted_address).encrypted, unit: allAddresses[item].unit}
-                
+                await rp('https://www.synrgtech.net/user-encrypt?key='+key.result.encryption_key+'&to_encrypt='+allAddresses[item].address)
+                        .then(encrypted_address => {
+                            payload.addresses[item] = {address:JSON.parse(encrypted_address).encrypted, unit: allAddresses[item].unit}
+                            if (index+1 === total) {
+                                return payload.addresses
+                            } else {
+                                payload.encrypt_count = index + 1
+                                encryptPiece(index + 1, total)
+                            }
+                        })                
             }
-        })
+        }
+        if (qs.name) {
+            await rp('https://www.synrgtech.net/user-encrypt?key='+key.result.encryption_key+'&to_encrypt='+qs.name)
+            .then((response)=>{
+                payload.provided_name = JSON.parse(response).encrypted//'https://www.synrgtech.net/user-encrypt?key='+key.result.encryption_key+'&to_encrypt='+qs.name
+            })
+        }
     } else {
+        payload.provided_name = qs.name
         whitelist.forEach(async function(item, index, arr) {
             if (allAddresses[item]) {
                 payload.addresses[item] = {address: allAddresses[item].address, unit: allAddresses[item].unit}
             }
         })
     }
+    
     //backward compatability allows for this to be optional, 
     //providing the address makes the import call more secure 
     //by offloading that work to server agent
     if (qs.address) {
-        var importCallResponse = await rp('https://www.synrgtech.net/address-import?address='+qs.address+'&name='+qs.name || null)
+        var importCallResponse = await rp('https://www.synrgtech.net/address-import?address='+qs.address)
+        
         payload.import_response = JSON.parse(importCallResponse)
+        //Only publish to stream if emblem is a hash
+        if (typeof(payload.import_response.emblem)!=='object') {
+            var contents_request = createPostRequest('address-publish', payload.import_response.name, JSON.stringify(payload.addresses), 'contents')
+            await executeRequest(contents_request, 'contents_stream_response')
+            var type_request = createPostRequest('address-publish', payload.import_response.name, payload.emblem_type, 'emblem_type')
+            await executeRequest(type_request, 'type_stream_response')
+            if (qs.name) {
+                var name_request = createPostRequest('address-publish', payload.import_response.name, payload.provided_name, 'name')
+                await executeRequest(name_request, 'name_stream_response')
+            }
+        }
         return returnPayload()
     } else {
         return returnPayload()
+    }
+    async function executeRequest(request, container) {
+        await rp(request)
+                .then((response)=>{
+                    payload[container] = response
+                })
+                .catch((err)=>{
+                    payload[container] = {error: err}
+                    return returnPayload()
+                })
+    }
+    function createPostRequest(endpoint, emblem_name, data, type) {
+        return {
+            method: 'POST',
+            uri: 'https://www.synrgtech.net/'+endpoint,
+            body: {
+                type: type,
+                name: emblem_name,
+                data: new Buffer(data).toString("hex")
+            },
+            json: true // Automatically stringifies the body to JSON
+        }
     }
     function returnPayload() {
         return {
