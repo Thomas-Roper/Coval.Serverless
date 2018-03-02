@@ -4,6 +4,7 @@ module.exports = async function(context) {
     var coval = new Coval()
     var Secure = coval.Secure
     var ManyKeys = require('coval.js/build/secure/ManyKeys')
+    var SHA256 = require("crypto-js/sha256")
     var UserLib = coval.User
     var UserType = UserLib.UserType
     var Agent = coval.Agent
@@ -65,6 +66,7 @@ module.exports = async function(context) {
     }
     
     var shares = agent.user.Split(2, 2, 256)
+    var encrypted_user_share, encrypted_identity_share, identity_key
     //generate encrypted seed
     var response = await rp('https://www.synrgtech.net/encrypt?key='+key.GetValue())
     payload.encrypted = JSON.parse(response).payload.encrypted
@@ -74,9 +76,11 @@ module.exports = async function(context) {
     
     payload.addresses = {}
     if (qs.unloq_id) {
-        payload.emblem_type="private"
         var key = JSON.parse(JSON.parse(unloq_key).key)
-        await encryptPiece(0, whitelist.length)
+        encrypted_user_share = await rp('https://www.synrgtech.net/user-encrypt?key='+key.result.encryption_key+'&to_encrypt='+shares.GetValue()[0])
+        identity_key = SHA256(key.result.encryption_key + process.env.MULTICHAINpass).toString()
+        encrypted_identity_share = await rp('https://www.synrgtech.net/user-encrypt?key='+identity_key+'&to_encrypt='+shares.GetValue()[1])
+        //recurrsion over foreach because #async
         async function encryptPiece(index, total) {
             var item = whitelist[index]
             if (allAddresses[item]) {
@@ -92,10 +96,21 @@ module.exports = async function(context) {
                         })                
             }
         }
-        if (qs.name) {
-            await rp('https://www.synrgtech.net/user-encrypt?key='+key.result.encryption_key+'&to_encrypt='+qs.name)
-            .then((response)=>{
-                payload.provided_name = JSON.parse(response).encrypted//'https://www.synrgtech.net/user-encrypt?key='+key.result.encryption_key+'&to_encrypt='+qs.name
+        if (qs.pvt) {
+            payload.emblem_type="private"
+            await encryptPiece(0, whitelist.length)
+            if (qs.name) {
+                await rp('https://www.synrgtech.net/user-encrypt?key='+key.result.encryption_key+'&to_encrypt='+qs.name)
+                .then((response)=>{
+                    payload.provided_name = JSON.parse(response).encrypted//'https://www.synrgtech.net/user-encrypt?key='+key.result.encryption_key+'&to_encrypt='+qs.name
+                })
+            }
+        } else {
+            payload.provided_name = qs.name
+            whitelist.forEach(async function(item, index, arr) {
+                if (allAddresses[item]) {
+                    payload.addresses[item] = {address: allAddresses[item].address, unit: allAddresses[item].unit}
+                }
             })
         }
     } else {
@@ -123,6 +138,10 @@ module.exports = async function(context) {
             if (qs.name) {
                 var name_request = createPostRequest('address-publish', payload.import_response.name, payload.provided_name, 'name')
                 await executeRequest(name_request, 'name_stream_response')
+            }
+            if (qs.unloq_id ) {
+                var share_request = createPostRequest('address-publish', payload.import_response.name, JSON.parse(encrypted_identity_share).encrypted, 'piece')
+                await executeRequest(share_request, 'id_piece_stream_response')
             }
         }
         return returnPayload()
@@ -152,15 +171,18 @@ module.exports = async function(context) {
         }
     }
     function returnPayload() {
+        var return_payload = {
+            payload: payload,
+            key_action: key_action,
+        }
+        if (qs.unloq_id) {
+            return_payload.my_share = JSON.parse(encrypted_user_share).encrypted
+            return_payload.id_share = JSON.parse(encrypted_identity_share).encrypted
+        }
         return {
             status: 200,
             body: 
-            JSON.stringify({ 
-                my_share: shares.GetValue()[0], 
-                id_share: shares.GetValue()[1],
-                payload: payload,
-                key_action: key_action,
-            },null,4),
+            JSON.stringify(return_payload, null, 4),
             headers: {
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*'
