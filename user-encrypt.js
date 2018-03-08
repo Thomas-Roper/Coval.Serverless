@@ -27,8 +27,8 @@ module.exports = function(context, callback) {
         payload.error = "Missing key"
         return returnPayload()
     }
-
-    payload.encrypted = encrypt(new Buffer(body.to_encrypt || qs.to_encrypt).toString("hex"), body.key || qs.key)
+    
+    payload.encrypted = encrypt(body.to_encrypt || qs.to_encrypt, body.key || qs.key)
     return returnPayload()
 
     function returnPayload() {

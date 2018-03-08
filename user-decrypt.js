@@ -24,10 +24,15 @@ module.exports = function(context, callback) {
         payload.error = "Missing value to decrypt"
         return returnPayload()
     }
-    Unloq.GetEncryptionKey(qs.unloq_id, function(key){
-        payload.decrypted = CryptoJS.AES.decrypt(qs.to_decrypt, JSON.parse(key).result.encryption_key).toString(CryptoJS.enc.Utf8)
-        return returnPayload()
-    })
+    if (!qs.key) {
+        Unloq.GetEncryptionKey(qs.unloq_id, function(key){
+            payload.decrypted = CryptoJS.AES.decrypt(qs.to_decrypt, JSON.parse(key).result.encryption_key).toString(CryptoJS.enc.Utf8)
+            return returnPayload()
+        })
+    } else {
+        payload.decrypted = CryptoJS.AES.decrypt(qs.to_decrypt, qs.key).toString(CryptoJS.enc.Utf8)
+            return returnPayload()
+    }
     function returnPayload() {
         return callback(200, payload, {
             'Content-Type': 'application/json',

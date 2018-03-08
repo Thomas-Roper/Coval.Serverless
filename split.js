@@ -171,9 +171,12 @@ module.exports = async function(context) {
         }
     }
     function returnPayload() {
+        var key = JSON.parse(JSON.parse(unloq_key).key)
         var return_payload = {
             payload: payload,
             key_action: key_action,
+            /* encryption_key: key,
+            raw_shares: {me: shares.GetValue()[0], id: shares.GetValue()[1]} */
         }
         if (qs.unloq_id) {
             return_payload.my_share = JSON.parse(encrypted_user_share).encrypted
