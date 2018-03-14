@@ -1,1 +1,0 @@
-curl $FISSION_ROUTER/fission-function/fortunewhale
