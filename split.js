@@ -75,20 +75,23 @@ module.exports = async function(context) {
     var unloq_key = await rp('https://www.synrgtech.net/request-unloq-key?unloq_id='+qs.unloq_id)
     
     payload.addresses = {}
+    payload.encrypted_addresses = {}
     if (qs.unloq_id) {
         var key = JSON.parse(JSON.parse(unloq_key).key)
         encrypted_user_share = await rp('https://www.synrgtech.net/user-encrypt?key='+key.result.encryption_key+'&to_encrypt='+shares.GetValue()[0])
         identity_key = SHA256(key.result.encryption_key + process.env.MULTICHAINpass).toString()
-        encrypted_identity_share = await rp('https://www.synrgtech.net/user-encrypt?key='+identity_key+'&to_encrypt='+shares.GetValue()[1])
+        identity_share_payload = JSON.stringify({ user: JSON.parse(encrypted_user_share).encrypted, identity: shares.GetValue()[1] })
+        encrypted_identity_share = await rp('https://www.synrgtech.net/user-encrypt?key='+identity_key+'&to_encrypt='+identity_share_payload)
         //recurrsion over foreach because #async
         async function encryptPiece(index, total) {
             var item = whitelist[index]
             if (allAddresses[item]) {
                 await rp('https://www.synrgtech.net/user-encrypt?key='+key.result.encryption_key+'&to_encrypt='+allAddresses[item].address)
                         .then(encrypted_address => {
-                            payload.addresses[item] = {address:JSON.parse(encrypted_address).encrypted, unit: allAddresses[item].unit}
+                            payload.encrypted_addresses[item] = {address:JSON.parse(encrypted_address).encrypted, unit: allAddresses[item].unit}
+                            payload.addresses[item] = {address: allAddresses[item].address, unit: allAddresses[item].unit}
                             if (index+1 === total) {
-                                return payload.addresses
+                                return payload.encrypted_addresses
                             } else {
                                 payload.encrypt_count = index + 1
                                 encryptPiece(index + 1, total)
@@ -98,11 +101,14 @@ module.exports = async function(context) {
         }
         if (qs.pvt) {
             payload.emblem_type="private"
+            // encrypt emblem contents
             await encryptPiece(0, whitelist.length)
+            // encrypt emblem name
             if (qs.name) {
                 await rp('https://www.synrgtech.net/user-encrypt?key='+key.result.encryption_key+'&to_encrypt='+qs.name)
                 .then((response)=>{
-                    payload.provided_name = JSON.parse(response).encrypted//'https://www.synrgtech.net/user-encrypt?key='+key.result.encryption_key+'&to_encrypt='+qs.name
+                    payload.provided_name = qs.name
+                    payload.provided_encrypted_name = JSON.parse(response).encrypted
                 })
             }
         } else {
@@ -131,12 +137,22 @@ module.exports = async function(context) {
         payload.import_response = JSON.parse(importCallResponse)
         //Only publish to stream if emblem is a hash
         if (typeof(payload.import_response.emblem)!=='object') {
-            var contents_request = createPostRequest('address-publish', payload.import_response.name, JSON.stringify(payload.addresses), 'contents')
+            var contents_request
+            if (payload.emblem_type === "private") {
+                contents_request = createPostRequest('address-publish', payload.import_response.name, JSON.stringify(payload.encrypted_addresses), 'contents')
+            } else {
+                contents_request = createPostRequest('address-publish', payload.import_response.name, JSON.stringify(payload.addresses), 'contents')
+            }
             await executeRequest(contents_request, 'contents_stream_response')
             var type_request = createPostRequest('address-publish', payload.import_response.name, payload.emblem_type, 'emblem_type')
             await executeRequest(type_request, 'type_stream_response')
             if (qs.name) {
-                var name_request = createPostRequest('address-publish', payload.import_response.name, payload.provided_name, 'name')
+                var name_request
+                if (payload.emblem_type === "private") {
+                    name_request = createPostRequest('address-publish', payload.import_response.name, payload.provided_encrypted_name, 'name')
+                } else {
+                    name_request = createPostRequest('address-publish', payload.import_response.name, payload.provided_name, 'name')
+                }
                 await executeRequest(name_request, 'name_stream_response')
             }
             if (qs.unloq_id ) {

@@ -2,3 +2,4 @@ node_modules/
 .DS_Store
 nodejs/test.env
 nodejs/env.sh
+.vscode

@@ -82,7 +82,7 @@ module.exports = async function(context) {
     var json_decrypted_user_share = JSON.parse(decrypted_user_share).decrypted
     var decrypt_id_share_url = 'https://www.synrgtech.net/user-decrypt?key='+identity_decryption_key+'&unloq_id='+qs.unloq_id+ "&to_decrypt="+id_share
     var decrypted_id_share = await rp(decrypt_id_share_url)
-    var json_decrypted_id_share = JSON.parse(decrypted_id_share).decrypted
+    var json_decrypted_id_share = JSON.parse(JSON.parse(decrypted_id_share).decrypted).identity
 
     var shares = []
     shares.push(json_decrypted_user_share)
